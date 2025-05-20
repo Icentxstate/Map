@@ -43,9 +43,7 @@ if uploaded_file:
             vmax = df_filtered[param].max()
 
             # Create map
-            avg_lat = df_filtered['Latitude'].mean()
-            avg_lon = df_filtered['Longitude'].mean()
-            m = folium.Map(location=[avg_lat, avg_lon], zoom_start=8, control_scale=True)
+            m = folium.Map(control_scale=True)
             marker_cluster = MarkerCluster().add_to(m)
 
             # Define colormap
@@ -70,6 +68,11 @@ if uploaded_file:
                     fill_opacity=0.9,
                     popup=folium.Popup(popup_html, max_width=300)
                 ).add_to(marker_cluster)
+
+            # Calculate bounds and apply fit_bounds
+            sw = df_filtered[['Latitude', 'Longitude']].min().values.tolist()
+            ne = df_filtered[['Latitude', 'Longitude']].max().values.tolist()
+            m.fit_bounds([sw, ne])
 
             # Add colormap to map
             m.add_child(colormap)
