@@ -85,3 +85,67 @@ if uploaded_file:
 
 else:
     st.info("📌 Please upload a CSV file to begin.")
+
+
+---------------------------------------------------------------------------
+def set_background(image_file):
+    import base64
+    with open(image_file, "rb") as img_file:
+        encoded = base64.b64encode(img_file.read()).decode()
+    st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background-image: url("data:image/png;base64,{encoded}");
+            background-repeat: no-repeat;
+            background-position: bottom right;
+            background-size: 150px;
+            background-attachment: fixed;
+            opacity: 0.15;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+set_background("meadows_logo.png")
+-------------------------------------------------------------------------------
+def add_legend(m, param, vmin, vmax):
+    from branca.element import Template, MacroElement
+    template = f"""
+    <!DOCTYPE html>
+    <div style="position: fixed;
+                bottom: 50px; left: 50px; width: 180px; height: 80px;
+                background-color: white;
+                z-index:9999; font-size:14px;
+                border:2px solid grey;
+                padding: 10px;">
+        <b>{param} Scale</b><br>
+        <i style="background: rgba(255,128,255,0.9); width: 20px; height: 10px; float: left; margin-right: 8px;"></i> Low<br>
+        <i style="background: rgba(255,255,128,0.9); width: 20px; height: 10px; float: left; margin-right: 8px;"></i> Medium<br>
+        <i style="background: rgba(255,0,0,0.9); width: 20px; height: 10px; float: left; margin-right: 8px;"></i> High
+    </div>
+    """
+    macro = MacroElement()
+    macro._template = Template(template)
+    m.get_root().add_child(macro)
+-----------------------------------------------------------------------------------------
+# --- Date Filter ---
+start_date = df['Date'].min()
+end_date = df['Date'].max()
+date_range = st.sidebar.date_input("📅 Filter by Date", [start_date, end_date])
+
+if len(date_range) == 2:
+    df = df[(df['Date'] >= pd.to_datetime(date_range[0])) & (df['Date'] <= pd.to_datetime(date_range[1]))]
+
+# --- Parameter Range Filter ---
+param_min = float(df[param].min())
+param_max = float(df[param].max())
+selected_range = st.sidebar.slider(f"🔍 {param} Range Filter", param_min, param_max, (param_min, param_max))
+df = df[(df[param] >= selected_range[0]) & (df[param] <= selected_range[1])]
+----------------------------------------------------------------------------------------------
+csv = df.to_csv(index=False).encode("utf-8")
+st.download_button("⬇️ Download Filtered Data", csv, f"filtered_{param}.csv", "text/csv")
+
+
+
