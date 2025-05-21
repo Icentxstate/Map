@@ -136,6 +136,14 @@ for _, row in avg_df.iterrows():
     <b>Avg {param}:</b> {val:.2f}
     """
 
+    # Shadow circle
+    Circle(location=[lat, lon],
+           radius=1000,
+           color=color,
+           fill=True,
+           fill_opacity=0.2).add_to(marker_cluster)
+
+    # Marker on top
     CircleMarker(location=[lat, lon],
                  radius=8,
                  color=color,
