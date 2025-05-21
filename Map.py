@@ -72,7 +72,6 @@ param = st.sidebar.selectbox("🧪 Select Parameter", numeric_cols)
 all_sites = df['Site Name'].unique().tolist()
 search_text = st.sidebar.text_input("🔍 Search Site", "")
 filtered_sites = [s for s in all_sites if search_text.lower() in s.lower()]
-selected_site = st.sidebar.selectbox("📍 Select Site", filtered_sites)
 
 # ---------- Summary Info ----------
 total_sites = df['Site ID'].nunique()
@@ -145,7 +144,20 @@ for _, row in avg_df.iterrows():
                  popup=folium.Popup(popup_content, max_width=300)).add_to(marker_cluster)
 
 m.add_child(colormap)
-st_folium(m, width=1100, height=500, returned_objects=[])
+clicked = st_folium(m, width=1100, height=500)
+
+# ---------- Handle Map Click Selection ----------
+clicked_site = None
+if clicked and clicked.get("last_object_clicked"):
+    lat = clicked["last_object_clicked"]["lat"]
+    lon = clicked["last_object_clicked"]["lng"]
+    df['distance'] = ((df['Latitude'] - lat)**2 + (df['Longitude'] - lon)**2)**0.5
+    clicked_site = df.loc[df['distance'].idxmin()]['Site Name']
+
+selected_site = st.sidebar.selectbox(
+    "📍 Select Site", filtered_sites,
+    index=filtered_sites.index(clicked_site) if clicked_site in filtered_sites else 0
+)
 
 # ---------- Analysis Tabs ----------
 st.subheader("📊 Parameter Analysis – Trends & Averages")
