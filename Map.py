@@ -130,6 +130,7 @@ for _, row in df.iterrows():
                  radius=7,
                  color=color,
                  fill=True,
+                 fill_color=color,
                  fill_opacity=0.9,
                  popup=folium.Popup(f"""
                      <b>Site:</b> {row['Site Name']}<br>
