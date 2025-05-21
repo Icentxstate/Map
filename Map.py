@@ -97,46 +97,52 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ---------- Map ----------
-st.subheader("🗺️ Interactive Parameter Map")
+st.subheader("🗺️ Average Value Map by Site")
 
-vmin = df[param].min()
-vmax = df[param].max()
+# Calculate average by site
+grouped = df.groupby('Site Name')
+avg_df = grouped[param].mean().reset_index()
+avg_df = avg_df.merge(df[['Site Name', 'Latitude', 'Longitude']].drop_duplicates(), on='Site Name')
+
+vmin = avg_df[param].min()
+vmax = avg_df[param].max()
 if pd.isna(vmin) or pd.isna(vmax) or vmin == vmax:
     st.warning(f"⚠️ Cannot render colormap for parameter: {param}")
     st.stop()
 
 colormap = linear.YlOrRd_09.scale(vmin, vmax)
-colormap.caption = f"{param} Scale"
+colormap.caption = f"{param} Average Scale"
 
-m = folium.Map(location=[df['Latitude'].mean(), df['Longitude'].mean()],
-               zoom_start=8, control_scale=True)
-
+m = folium.Map(location=[df['Latitude'].mean(), df['Longitude'].mean()], zoom_start=8, control_scale=True)
 marker_cluster = MarkerCluster().add_to(m)
 
-for _, row in df.iterrows():
+for _, row in avg_df.iterrows():
     val = row[param]
+    site_name = row['Site Name']
+    site_data = df[df['Site Name'] == site_name]
+    lat = row['Latitude']
+    lon = row['Longitude']
+
     try:
         color = colormap(val)
     except ValueError:
         color = "gray"
 
-    Circle(location=[row['Latitude'], row['Longitude']],
-           radius=1000,
-           color='blue',
-           fill=True,
-           fill_opacity=0.1).add_to(m)
+    popup_content = f"""
+    <b>Site:</b> {site_name}<br>
+    <b>Latitude:</b> {lat:.4f}<br>
+    <b>Longitude:</b> {lon:.4f}<br>
+    <b>Start Date:</b> {site_data['Date'].min().date()}<br>
+    <b>End Date:</b> {site_data['Date'].max().date()}<br>
+    <b>Avg {param}:</b> {val:.2f}
+    """
 
-    CircleMarker(location=[row['Latitude'], row['Longitude']],
-                 radius=7,
+    CircleMarker(location=[lat, lon],
+                 radius=8,
                  color=color,
                  fill=True,
-                 fill_color=color,
                  fill_opacity=0.9,
-                 popup=folium.Popup(f"""
-                     <b>Site:</b> {row['Site Name']}<br>
-                     <b>Date:</b> {row['Date'].date()}<br>
-                     <b>{param}:</b> {val:.2f}
-                 """, max_width=300)).add_to(marker_cluster)
+                 popup=folium.Popup(popup_content, max_width=300)).add_to(marker_cluster)
 
 m.add_child(colormap)
 st_folium(m, width=1100, height=500, returned_objects=[])
