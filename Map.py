@@ -215,9 +215,6 @@ with tab5:
     aspect="auto",
     title="Correlation Matrix",
     color_continuous_scale=["#730000", "#e57373", "#ffffff", "#64b5f6", "#003366"],
-    color_continuous_scale=[
-        "#b71c1c", "#e57373", "#ffffff", "#64b5f6", "#0d47a1"
-    ],
     zmin=-1,
     zmax=1
 )
