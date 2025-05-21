@@ -7,7 +7,7 @@ from branca.colormap import linear
 from streamlit_folium import st_folium
 import plotly.express as px
 
-# ---------- Page Config (must be first) ----------
+# ---------- Page Config ----------
 st.set_page_config(page_title="Water Quality Dashboard", layout="wide")
 
 # ---------- Theme Toggle ----------
@@ -61,17 +61,16 @@ try:
     df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
     df = df.dropna(subset=['Latitude', 'Longitude'])
 except:
-    st.error("Could not load INPUT_1.csv. Please make sure the file exists.")
+    st.error("❌ Could not load INPUT_1.csv. Make sure it exists and is formatted correctly.")
     st.stop()
 
 # ---------- Sidebar Controls ----------
 st.sidebar.markdown("## ⚙️ Controls")
-
 numeric_cols = df.select_dtypes(include='number').columns.tolist()
 param = st.sidebar.selectbox("🧪 Select Parameter", numeric_cols)
 
 all_sites = df['Site Name'].unique().tolist()
-search_text = st.sidebar.text_input("🔎 Search Site", "")
+search_text = st.sidebar.text_input("🔍 Search Site", "")
 filtered_sites = [s for s in all_sites if search_text.lower() in s.lower()]
 selected_site = st.sidebar.selectbox("📍 Select Site", filtered_sites)
 
@@ -98,11 +97,16 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ---------- Map ----------
-st.subheader("🗌 Interactive Parameter Map")
+st.subheader("🗺️ Interactive Parameter Map")
 
-vmin, vmax = df[param].min(), df[param].max()
+vmin = df[param].min()
+vmax = df[param].max()
+if pd.isna(vmin) or pd.isna(vmax) or vmin == vmax:
+    st.warning(f"⚠️ Cannot render colormap for parameter: {param}")
+    st.stop()
+
 colormap = linear.YlOrRd_09.scale(vmin, vmax)
-colormap.caption = f'{param} Scale'
+colormap.caption = f"{param} Scale"
 
 m = folium.Map(location=[df['Latitude'].mean(), df['Longitude'].mean()],
                zoom_start=8, control_scale=True)
@@ -111,7 +115,10 @@ marker_cluster = MarkerCluster().add_to(m)
 
 for _, row in df.iterrows():
     val = row[param]
-    color = colormap(val)
+    try:
+        color = colormap(val)
+    except ValueError:
+        color = "gray"
 
     Circle(location=[row['Latitude'], row['Longitude']],
            radius=1000,
@@ -141,7 +148,7 @@ site_df['Month'] = site_df['Date'].dt.to_period('M')
 site_df['Year'] = site_df['Date'].dt.year
 
 # --- Tabs ---
-tab1, tab2, tab3 = st.tabs(["\ud83d\udcc8 Time Series", "\ud83d\udcc6 Monthly Avg", "\ud83d\uddd5 Yearly Avg"])
+tab1, tab2, tab3 = st.tabs(["📈 Time Series", "📆 Monthly Avg", "📅 Yearly Avg"])
 
 with tab1:
     fig1 = px.line(site_df, x='Date', y=param, title=f'{param} Over Time at {selected_site}')
