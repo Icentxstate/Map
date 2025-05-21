@@ -1,3 +1,4 @@
+# Water Quality Dashboard - Final Version with All Enhancements
 import streamlit as st
 import pandas as pd
 import folium
@@ -6,17 +7,23 @@ from folium.plugins import MarkerCluster
 from branca.colormap import linear
 from streamlit_folium import st_folium
 import plotly.express as px
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 # ---------- Page Config ----------
 st.set_page_config(page_title="Water Quality Dashboard", layout="wide")
 
 # ---------- Theme Toggle ----------
-theme = st.sidebar.radio("🎨 Theme", ["Light", "Dark"])
+theme = st.sidebar.radio("🎨 Theme", ["Light", "Dark", "Green-Blue"])
 
 if theme == "Dark":
     bg_color = "#2b2b2b"
     text_color = "#f0f0f0"
     card_bg = "#3b3b3b"
+elif theme == "Green-Blue":
+    bg_color = "#e0f7fa"
+    text_color = "#004d40"
+    card_bg = "#b2dfdb"
 else:
     bg_color = "#f7f9fa"
     text_color = "#222"
@@ -61,22 +68,20 @@ try:
     df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
     df = df.dropna(subset=['Latitude', 'Longitude'])
 except:
-    st.error("❌ Could not load INPUT_1.csv. Make sure it exists and is formatted correctly.")
+    st.error("\u274c Could not load INPUT_1.csv. Make sure it exists and is formatted correctly.")
     st.stop()
 
 # ---------- Sidebar Controls ----------
 st.sidebar.markdown("## ⚙️ Controls")
-numeric_cols = df.select_dtypes(include='number').columns.tolist()
+numeric_cols = [col for col in df.select_dtypes(include='number').columns if col != 'Site ID']
 param = st.sidebar.selectbox("🧪 Select Parameter", numeric_cols)
 
 all_sites = df['Site Name'].unique().tolist()
-search_text = st.sidebar.text_input("🔍 Search Site", "")
-filtered_sites = [s for s in all_sites if search_text.lower() in s.lower()]
+selected_site = st.sidebar.selectbox("📍 Select Site", all_sites)
 
 # ---------- Summary Info ----------
 total_sites = df['Site ID'].nunique()
 date_range = f"{df['Date'].min().date()} → {df['Date'].max().date()}"
-selected_param_name = param
 
 st.markdown(f"""
 <div class="card-container">
@@ -89,7 +94,7 @@ st.markdown(f"""
         <p>Date Range</p>
     </div>
     <div class="card">
-        <h2>{selected_param_name}</h2>
+        <h2>{param}</h2>
         <p>Selected Parameter</p>
     </div>
 </div>
@@ -97,8 +102,6 @@ st.markdown(f"""
 
 # ---------- Map ----------
 st.subheader("🗺️ Average Value Map by Site")
-
-# Calculate average by site
 grouped = df.groupby('Site Name')
 avg_df = grouped[param].mean().reset_index()
 avg_df = avg_df.merge(df[['Site Name', 'Latitude', 'Longitude']].drop_duplicates(), on='Site Name')
@@ -109,10 +112,9 @@ if pd.isna(vmin) or pd.isna(vmax) or vmin == vmax:
     st.warning(f"⚠️ Cannot render colormap for parameter: {param}")
     st.stop()
 
-colormap = linear.YlOrRd_09.scale(vmin, vmax)
+colormap = linear.YlGnBu_09.scale(vmin, vmax)
 colormap.caption = f"{param} Average Scale"
 
-# Create map and fit to bounds
 m = folium.Map(zoom_start=8, control_scale=True)
 bounds = [[df['Latitude'].min(), df['Longitude'].min()],
           [df['Latitude'].max(), df['Longitude'].max()]]
@@ -141,46 +143,20 @@ for _, row in avg_df.iterrows():
     <b>Avg {param}:</b> {val:.2f}
     """
 
-    # Add shaded 1km radius circle with same color
-    Circle(location=[lat, lon],
-           radius=1000,
-           color=color,
-           fill=True,
-           fill_opacity=0.1).add_to(m)
-
-    # Add solid marker with popup
-    CircleMarker(location=[lat, lon],
-                 radius=8,
-                 color=color,
-                 fill=True,
-                 fill_opacity=0.9,
+    Circle(location=[lat, lon], radius=200, color=color, fill=True, fill_opacity=0.1).add_to(m)
+    CircleMarker(location=[lat, lon], radius=8, color=color, fill=True, fill_opacity=0.9,
                  popup=folium.Popup(popup_content, max_width=300)).add_to(marker_cluster)
 
 m.add_child(colormap)
-clicked = st_folium(m, use_container_width=True, height=750)
+clicked = st_folium(m, use_container_width=True)
 
-# ---------- Handle Map Click Selection ----------
-clicked_site = None
-if clicked and clicked.get("last_object_clicked"):
-    lat = clicked["last_object_clicked"]["lat"]
-    lon = clicked["last_object_clicked"]["lng"]
-    df['distance'] = ((df['Latitude'] - lat)**2 + (df['Longitude'] - lon)**2)**0.5
-    clicked_site = df.loc[df['distance'].idxmin()]['Site Name']
-
-selected_site = st.sidebar.selectbox(
-    "📍 Select Site", filtered_sites,
-    index=filtered_sites.index(clicked_site) if clicked_site in filtered_sites else 0
-)
-
-# ---------- Analysis Tabs ----------
-st.subheader("📊 Parameter Analysis – Trends & Averages")
-
+# ---------- Site Data ----------
 site_df = df[df['Site Name'] == selected_site].copy()
 site_df['Month'] = site_df['Date'].dt.to_period('M')
 site_df['Year'] = site_df['Date'].dt.year
 
-# --- Tabs ---
-tab1, tab2, tab3 = st.tabs(["📈 Time Series", "📆 Monthly Avg", "📅 Yearly Avg"])
+# ---------- Tabs ----------
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["\ud83d\udcc1 Time Series", "\ud83d\udcc6 Monthly Avg", "\ud83d\udcc5 Yearly Avg", "\ud83d\udd01 Compare Params", "\ud83d\udcca Correlation Matrix"])
 
 with tab1:
     fig1 = px.line(site_df, x='Date', y=param, title=f'{param} Over Time at {selected_site}')
@@ -197,7 +173,30 @@ with tab3:
     fig3 = px.bar(yearly, x='Year', y=param, title=f'Yearly Average of {param}')
     st.plotly_chart(fig3, use_container_width=True)
 
-# ---------- Download Button ----------
+with tab4:
+    other_params = [col for col in numeric_cols if col != param]
+    param2 = st.selectbox("Select Parameter to Compare With", other_params)
+    scatter_df = site_df[[param, param2]].dropna()
+    if scatter_df.empty:
+        st.warning("Not enough data to create scatter plot.")
+    else:
+        fig4 = px.scatter(scatter_df, x=param2, y=param, title=f'{param} vs {param2} at {selected_site}')
+        st.plotly_chart(fig4, use_container_width=True)
+
+with tab5:
+    corr_df = site_df[numeric_cols].dropna()
+    if corr_df.shape[0] < 2:
+        st.warning("\u26a0\ufe0f Not enough data at this site to calculate correlation matrix.")
+    else:
+        corr = corr_df.corr()
+        cmap = sns.diverging_palette(240, 10, as_cmap=True)
+        fig_corr, ax = plt.subplots(figsize=(10, 8))
+        sns.heatmap(corr, annot=True, cmap=cmap, center=0, vmin=-1, vmax=1, linewidths=0.5,
+                    fmt=".2f", annot_kws={"size": 10}, square=True, ax=ax)
+        ax.set_title(f'Correlation Matrix at {selected_site}', fontsize=14)
+        st.pyplot(fig_corr)
+
+# ---------- Download ----------
 st.download_button(
     label="💾 Download This Site's Data",
     data=site_df.to_csv(index=False).encode('utf-8'),
