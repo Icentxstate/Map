@@ -11,16 +11,20 @@ import plotly.express as px
 st.set_page_config(page_title="Water Quality Dashboard", layout="wide")
 
 # ---------- Theme Toggle ----------
-theme = st.sidebar.radio("🎨 Theme", ["Light", "Dark"])
+theme = st.sidebar.radio("🎨 Theme", ["Light", "Dark", "Green-Blue"])
 
 if theme == "Dark":
     bg_color = "#2b2b2b"
     text_color = "#f0f0f0"
     card_bg = "#3b3b3b"
+elif theme == "Green-Blue":
+    bg_color = "#e0f7fa"
+    text_color = "#004d40"
+    card_bg = "#b2dfdb"
 else:
     bg_color = "#f7f9fa"
     text_color = "#222"
-    card_bg = "#ffffff"
+    card_bg = "#ffffff""#ffffff"
 
 st.markdown(f"""
     <style>
@@ -66,12 +70,11 @@ except:
 
 # ---------- Sidebar Controls ----------
 st.sidebar.markdown("## ⚙️ Controls")
-numeric_cols = df.select_dtypes(include='number').columns.tolist()
+numeric_cols = [col for col in df.select_dtypes(include='number').columns if col != 'Site ID']
 param = st.sidebar.selectbox("🧪 Select Parameter", numeric_cols)
 
 all_sites = df['Site Name'].unique().tolist()
-search_text = st.sidebar.text_input("🔍 Search Site", "")
-filtered_sites = [s for s in all_sites if search_text.lower() in s.lower()]
+filtered_sites = all_sites
 
 # ---------- Summary Info ----------
 total_sites = df['Site ID'].nunique()
@@ -143,7 +146,7 @@ for _, row in avg_df.iterrows():
 
     # Add shaded 1km radius circle with same color
     Circle(location=[lat, lon],
-           radius=1000,
+           radius=200,
            color=color,
            fill=True,
            fill_opacity=0.1).add_to(m)
