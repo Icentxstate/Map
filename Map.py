@@ -200,8 +200,12 @@ with tab4:
         st.plotly_chart(fig4, use_container_width=True)
 
 with tab5:
-    st.write(f"Correlation Matrix for all numeric parameters at site: {selected_site}")
+    st.write(f"🔗 Correlation Matrix for all numeric parameters at site: {selected_site}")
+    
+    # انتخاب داده‌های عددی فقط برای ایستگاه انتخاب‌شده
     corr_df = site_df[numeric_cols].dropna().corr()
+
+    # رسم با plotly و رنگ‌بندی آبی تا قرمز
     fig_corr = px.imshow(
         corr_df,
         text_auto=True,
@@ -210,6 +214,7 @@ with tab5:
         title="Correlation Matrix",
         zmin=-1, zmax=1
     )
+    
     st.plotly_chart(fig_corr, use_container_width=True)
 
 # ---------- Download ----------
