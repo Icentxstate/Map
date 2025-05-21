@@ -33,6 +33,13 @@ st.markdown(f"""
         color: {text_color};
         font-family: 'Segoe UI', sans-serif;
     }}
+    .stTabs [role='tab'] {{
+        color: {text_color} !important;
+    }}
+    .stTabs [role='tab'][aria-selected='true'] {{
+        font-weight: bold;
+        background-color: rgba(0,0,0,0.05);
+    }}
     .card-container {{
         display: flex;
         justify-content: space-around;
@@ -48,13 +55,13 @@ st.markdown(f"""
         margin: 0 10px;
     }}
     .card h2 {{
-        color: #1f77b4;
+        color: #00796b;
         font-size: 28px;
         margin-bottom: 5px;
     }}
     .card p {{
         font-size: 15px;
-        color: #888;
+        color: #4db6ac;
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -187,6 +194,7 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs(["📈 Time Series", "📆 Monthly Avg", 
 
 with tab1:
     fig1 = px.line(site_df, x='Date', y=param, title=f'{param} Over Time at {selected_site}')
+fig1.update_layout(plot_bgcolor=card_bg, paper_bgcolor=bg_color, font=dict(color=text_color))
     st.plotly_chart(fig1, use_container_width=True)
 
 with tab2:
