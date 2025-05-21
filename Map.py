@@ -209,16 +209,33 @@ with tab4:
 with tab5:
     st.write(f"🔗 Correlation Matrix for all numeric parameters at site: {selected_site}")
     corr_df = site_df[numeric_cols].corr()
+
+    colormaps = {
+        "Red–Blue": ["#730000", "#e57373", "#ffffff", "#64b5f6", "#003366"],
+        "Viridis": "Viridis",
+        "Cividis": "Cividis",
+        "Coolwarm": "RdBu",
+        "Greens": "Greens"
+    }
+    cmap_choice = st.selectbox("🎨 Choose a Color Map", list(colormaps.keys()), index=0)
+
     fig_corr = px.imshow(
-    corr_df,
-    text_auto=True,
-    aspect="auto",
-    title="Correlation Matrix",
-    color_continuous_scale=["#730000", "#e57373", "#ffffff", "#64b5f6", "#003366"],
-    zmin=-1,
-    zmax=1
-)
+        corr_df,
+        text_auto=True,
+        aspect="auto",
+        title="Correlation Matrix",
+        color_continuous_scale=colormaps[cmap_choice],
+        zmin=-1,
+        zmax=1
+    )
     st.plotly_chart(fig_corr, use_container_width=True)
+
+    st.download_button(
+        label="💾 Download Correlation Matrix (Excel)",
+        data=corr_df.to_csv(index=True).encode("utf-8"),
+        file_name=f"{selected_site.replace(' ', '_')}_correlation_matrix.csv",
+        mime="text/csv"
+    )
 
 # ---------- Download Button ----------
 st.download_button(
