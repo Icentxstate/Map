@@ -160,7 +160,7 @@ for _, row in avg_df.iterrows():
                  popup=folium.Popup(popup_content, max_width=300)).add_to(marker_cluster)
 
 m.add_child(colormap)
-clicked = st_folium(m, use_container_width=True, height=750)
+clicked = st_folium(m, use_container_width=True)
 
 # ---------- Handle Map Click Selection ----------
 clicked_site = None
@@ -209,7 +209,17 @@ with tab4:
 with tab5:
     st.write(f"🔗 Correlation Matrix for all numeric parameters at site: {selected_site}")
     corr_df = site_df[numeric_cols].corr()
-    fig_corr = px.imshow(corr_df, text_auto=True, aspect="auto", title="Correlation Matrix")
+    fig_corr = px.imshow(
+    corr_df,
+    text_auto=True,
+    aspect="auto",
+    title="Correlation Matrix",
+    color_continuous_scale=[
+        "#b71c1c", "#e57373", "#ffffff", "#64b5f6", "#0d47a1"
+    ],
+    zmin=-1,
+    zmax=1
+)
     st.plotly_chart(fig_corr, use_container_width=True)
 
 # ---------- Download Button ----------
