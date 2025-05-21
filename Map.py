@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 st.set_page_config(page_title="Water Quality Dashboard", layout="wide")
 
 # ---------- Theme Toggle ----------
-theme = st.sidebar.radio("🎨 Theme", ["Light", "Dark", "Green-Blue"])
+theme = st.sidebar.radio("Theme", ["Light", "Dark", "Green-Blue"])
 
 if theme == "Dark":
     bg_color = "#2b2b2b"
@@ -68,16 +68,16 @@ try:
     df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
     df = df.dropna(subset=['Latitude', 'Longitude'])
 except:
-    st.error("\u274c Could not load INPUT_1.csv. Make sure it exists and is formatted correctly.")
+    st.error("Could not load INPUT_1.csv. Make sure it exists and is formatted correctly.")
     st.stop()
 
 # ---------- Sidebar Controls ----------
-st.sidebar.markdown("## ⚙️ Controls")
+st.sidebar.markdown("## Controls")
 numeric_cols = [col for col in df.select_dtypes(include='number').columns if col != 'Site ID']
-param = st.sidebar.selectbox("🧪 Select Parameter", numeric_cols)
+param = st.sidebar.selectbox("Select Parameter", numeric_cols)
 
 all_sites = df['Site Name'].unique().tolist()
-selected_site = st.sidebar.selectbox("📍 Select Site", all_sites)
+selected_site = st.sidebar.selectbox("Select Site", all_sites)
 
 # ---------- Summary Info ----------
 total_sites = df['Site ID'].nunique()
@@ -101,7 +101,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ---------- Map ----------
-st.subheader("🗺️ Average Value Map by Site")
+st.subheader("Average Value Map by Site")
 grouped = df.groupby('Site Name')
 avg_df = grouped[param].mean().reset_index()
 avg_df = avg_df.merge(df[['Site Name', 'Latitude', 'Longitude']].drop_duplicates(), on='Site Name')
@@ -109,7 +109,7 @@ avg_df = avg_df.merge(df[['Site Name', 'Latitude', 'Longitude']].drop_duplicates
 vmin = avg_df[param].min()
 vmax = avg_df[param].max()
 if pd.isna(vmin) or pd.isna(vmax) or vmin == vmax:
-    st.warning(f"⚠️ Cannot render colormap for parameter: {param}")
+    st.warning(f"Cannot render colormap for parameter: {param}")
     st.stop()
 
 colormap = linear.YlGnBu_09.scale(vmin, vmax)
@@ -156,7 +156,7 @@ site_df['Month'] = site_df['Date'].dt.to_period('M')
 site_df['Year'] = site_df['Date'].dt.year
 
 # ---------- Tabs ----------
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["\ud83d\udcc1 Time Series", "\ud83d\udcc6 Monthly Avg", "\ud83d\udcc5 Yearly Avg", "\ud83d\udd01 Compare Params", "\ud83d\udcca Correlation Matrix"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Time Series", "Monthly Avg", "Yearly Avg", "Compare Params", "Correlation Matrix"])
 
 with tab1:
     fig1 = px.line(site_df, x='Date', y=param, title=f'{param} Over Time at {selected_site}')
@@ -186,7 +186,7 @@ with tab4:
 with tab5:
     corr_df = site_df[numeric_cols].dropna()
     if corr_df.shape[0] < 2:
-        st.warning("\u26a0\ufe0f Not enough data at this site to calculate correlation matrix.")
+        st.warning("Not enough data at this site to calculate correlation matrix.")
     else:
         corr = corr_df.corr()
         cmap = sns.diverging_palette(240, 10, as_cmap=True)
@@ -198,7 +198,7 @@ with tab5:
 
 # ---------- Download ----------
 st.download_button(
-    label="💾 Download This Site's Data",
+    label="Download This Site's Data",
     data=site_df.to_csv(index=False).encode('utf-8'),
     file_name=f"{selected_site.replace(' ', '_')}_data.csv",
     mime="text/csv"
