@@ -112,7 +112,12 @@ if pd.isna(vmin) or pd.isna(vmax) or vmin == vmax:
 colormap = linear.YlOrRd_09.scale(vmin, vmax)
 colormap.caption = f"{param} Average Scale"
 
-m = folium.Map(location=[df['Latitude'].mean(), df['Longitude'].mean()], zoom_start=8, control_scale=True)
+# Create map and fit to bounds
+m = folium.Map(zoom_start=8, control_scale=True)
+bounds = [[df['Latitude'].min(), df['Longitude'].min()],
+          [df['Latitude'].max(), df['Longitude'].max()]]
+m.fit_bounds(bounds)
+
 marker_cluster = MarkerCluster().add_to(m)
 
 for _, row in avg_df.iterrows():
@@ -152,7 +157,7 @@ for _, row in avg_df.iterrows():
                  popup=folium.Popup(popup_content, max_width=300)).add_to(marker_cluster)
 
 m.add_child(colormap)
-clicked = st_folium(m, width=1100, height=500)
+clicked = st_folium(m, use_container_width=True, height=750)
 
 # ---------- Handle Map Click Selection ----------
 clicked_site = None
