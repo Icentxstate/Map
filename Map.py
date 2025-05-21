@@ -180,7 +180,7 @@ site_df['Month'] = site_df['Date'].dt.to_period('M')
 site_df['Year'] = site_df['Date'].dt.year
 
 # --- Tabs ---
-tab1, tab2, tab3 = st.tabs(["📈 Time Series", "📆 Monthly Avg", "📅 Yearly Avg"])
+tab1, tab2, tab3, tab4 = st.tabs(["📈 Time Series", "📆 Monthly Avg", "📅 Yearly Avg", "🔁 Compare Params"])
 
 with tab1:
     fig1 = px.line(site_df, x='Date', y=param, title=f'{param} Over Time at {selected_site}')
@@ -196,6 +196,12 @@ with tab3:
     yearly = site_df.groupby('Year')[param].mean().reset_index()
     fig3 = px.bar(yearly, x='Year', y=param, title=f'Yearly Average of {param}')
     st.plotly_chart(fig3, use_container_width=True)
+
+with tab4:
+    param2 = st.selectbox("🔁 Compare with another parameter", [col for col in numeric_cols if col != param])
+    scatter_df = site_df[[param, param2]].dropna()
+    fig4 = px.scatter(scatter_df, x=param2, y=param, trendline="ols", title=f'{param} vs {param2} at {selected_site}')
+    st.plotly_chart(fig4, use_container_width=True)
 
 # ---------- Download Button ----------
 st.download_button(
