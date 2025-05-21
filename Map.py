@@ -1,4 +1,4 @@
-# Water Quality Dashboard - Final Version with All Enhancements
+# Water Quality Dashboard - Final Version (Click-to-Select Site)
 import streamlit as st
 import pandas as pd
 import folium
@@ -7,8 +7,6 @@ from folium.plugins import MarkerCluster
 from branca.colormap import linear
 from streamlit_folium import st_folium
 import plotly.express as px
-import seaborn as sns
-import matplotlib.pyplot as plt
 
 # ---------- Page Config ----------
 st.set_page_config(page_title="Water Quality Dashboard", layout="wide")
@@ -77,28 +75,10 @@ numeric_cols = [col for col in df.select_dtypes(include='number').columns if col
 param = st.sidebar.selectbox("Select Parameter", numeric_cols)
 
 all_sites = df['Site Name'].unique().tolist()
-selected_site = st.sidebar.selectbox("Select Site", all_sites)
 
-# ---------- Summary Info ----------
-total_sites = df['Site ID'].nunique()
-date_range = f"{df['Date'].min().date()} → {df['Date'].max().date()}"
-
-st.markdown(f"""
-<div class="card-container">
-    <div class="card">
-        <h2>{total_sites}</h2>
-        <p>Total Sites</p>
-    </div>
-    <div class="card">
-        <h2>{date_range}</h2>
-        <p>Date Range</p>
-    </div>
-    <div class="card">
-        <h2>{param}</h2>
-        <p>Selected Parameter</p>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+# ---------- Placeholder for clicked site ----------
+clicked = None
+clicked_site = None
 
 # ---------- Map ----------
 st.subheader("Average Value Map by Site")
@@ -150,10 +130,46 @@ for _, row in avg_df.iterrows():
 m.add_child(colormap)
 clicked = st_folium(m, use_container_width=True)
 
+# ---------- Determine Clicked Site ----------
+if clicked and clicked.get("last_object_clicked"):
+    lat = clicked["last_object_clicked"]["lat"]
+    lon = clicked["last_object_clicked"]["lng"]
+    df['distance'] = ((df['Latitude'] - lat)**2 + (df['Longitude'] - lon)**2)**0.5
+    clicked_site = df.loc[df['distance'].idxmin()]['Site Name']
+
+# ---------- Site Selector ----------
+if clicked_site and clicked_site in all_sites:
+    default_index = all_sites.index(clicked_site)
+else:
+    default_index = 0
+
+selected_site = st.sidebar.selectbox("Select Site", all_sites, index=default_index)
+
 # ---------- Site Data ----------
 site_df = df[df['Site Name'] == selected_site].copy()
 site_df['Month'] = site_df['Date'].dt.to_period('M')
 site_df['Year'] = site_df['Date'].dt.year
+
+# ---------- Summary Info ----------
+total_sites = df['Site ID'].nunique()
+date_range = f"{df['Date'].min().date()} → {df['Date'].max().date()}"
+
+st.markdown(f"""
+<div class="card-container">
+    <div class="card">
+        <h2>{total_sites}</h2>
+        <p>Total Sites</p>
+    </div>
+    <div class="card">
+        <h2>{date_range}</h2>
+        <p>Date Range</p>
+    </div>
+    <div class="card">
+        <h2>{param}</h2>
+        <p>Selected Parameter</p>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 # ---------- Tabs ----------
 tab1, tab2, tab3, tab4, tab5 = st.tabs(["Time Series", "Monthly Avg", "Yearly Avg", "Compare Params", "Correlation Matrix"])
@@ -184,23 +200,17 @@ with tab4:
         st.plotly_chart(fig4, use_container_width=True)
 
 with tab5:
-    st.write(f"🔗 Correlation Matrix for all numeric parameters at site: {selected_site}")
-    
-    # انتخاب داده‌های عددی فقط برای ایستگاه انتخاب‌شده
-    corr_df = site_df[numeric_cols].corr()
-
-    # رسم با plotly
+    st.write(f"Correlation Matrix for all numeric parameters at site: {selected_site}")
+    corr_df = site_df[numeric_cols].dropna().corr()
     fig_corr = px.imshow(
         corr_df,
         text_auto=True,
         aspect="auto",
         color_continuous_scale="RdBu",
         title="Correlation Matrix",
-        zmin=-1, zmax=1  # دامنه استاندارد برای ضریب همبستگی
+        zmin=-1, zmax=1
     )
-    
     st.plotly_chart(fig_corr, use_container_width=True)
-
 
 # ---------- Download ----------
 st.download_button(
