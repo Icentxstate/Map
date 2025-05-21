@@ -195,7 +195,7 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs(["📈 Time Series", "📆 Monthly Avg", 
 with tab1:
     fig1 = px.line(site_df, x='Date', y=param, title=f'{param} Over Time at {selected_site}')
 fig1.update_layout(plot_bgcolor=card_bg, paper_bgcolor=bg_color, font=dict(color=text_color))
-    st.plotly_chart(fig1, use_container_width=True)
+st.plotly_chart(fig1, use_container_width=True)
 
 with tab2:
     monthly = site_df.groupby('Month')[param].mean().reset_index()
