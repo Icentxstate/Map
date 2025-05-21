@@ -11,20 +11,16 @@ import plotly.express as px
 st.set_page_config(page_title="Water Quality Dashboard", layout="wide")
 
 # ---------- Theme Toggle ----------
-theme = st.sidebar.radio("🎨 Theme", ["Light", "Dark", "Green-Blue"])
+theme = st.sidebar.radio("🎨 Theme", ["Light", "Dark"])
 
 if theme == "Dark":
     bg_color = "#2b2b2b"
     text_color = "#f0f0f0"
     card_bg = "#3b3b3b"
-elif theme == "Green-Blue":
-    bg_color = "#e0f7fa"
-    text_color = "#004d40"
-    card_bg = "#b2dfdb"
 else:
     bg_color = "#f7f9fa"
     text_color = "#222"
-    card_bg = "#ffffff""#ffffff"
+    card_bg = "#ffffff"
 
 st.markdown(f"""
     <style>
@@ -32,13 +28,6 @@ st.markdown(f"""
         background-color: {bg_color};
         color: {text_color};
         font-family: 'Segoe UI', sans-serif;
-    }}
-    .stTabs [role='tab'] {{
-        color: {text_color} !important;
-    }}
-    .stTabs [role='tab'][aria-selected='true'] {{
-        font-weight: bold;
-        background-color: rgba(0,0,0,0.05);
     }}
     .card-container {{
         display: flex;
@@ -55,13 +44,13 @@ st.markdown(f"""
         margin: 0 10px;
     }}
     .card h2 {{
-        color: #00796b;
+        color: #1f77b4;
         font-size: 28px;
         margin-bottom: 5px;
     }}
     .card p {{
         font-size: 15px;
-        color: #4db6ac;
+        color: #888;
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -77,11 +66,12 @@ except:
 
 # ---------- Sidebar Controls ----------
 st.sidebar.markdown("## ⚙️ Controls")
-numeric_cols = [col for col in df.select_dtypes(include='number').columns if col != 'Site ID']
+numeric_cols = df.select_dtypes(include='number').columns.tolist()
 param = st.sidebar.selectbox("🧪 Select Parameter", numeric_cols)
 
 all_sites = df['Site Name'].unique().tolist()
-filtered_sites = all_sites
+search_text = st.sidebar.text_input("🔍 Search Site", "")
+filtered_sites = [s for s in all_sites if search_text.lower() in s.lower()]
 
 # ---------- Summary Info ----------
 total_sites = df['Site ID'].nunique()
@@ -153,7 +143,7 @@ for _, row in avg_df.iterrows():
 
     # Add shaded 1km radius circle with same color
     Circle(location=[lat, lon],
-           radius=200,
+           radius=1000,
            color=color,
            fill=True,
            fill_opacity=0.1).add_to(m)
@@ -167,7 +157,7 @@ for _, row in avg_df.iterrows():
                  popup=folium.Popup(popup_content, max_width=300)).add_to(marker_cluster)
 
 m.add_child(colormap)
-clicked = st_folium(m, use_container_width=True)
+clicked = st_folium(m, use_container_width=True, height=750)
 
 # ---------- Handle Map Click Selection ----------
 clicked_site = None
@@ -190,12 +180,11 @@ site_df['Month'] = site_df['Date'].dt.to_period('M')
 site_df['Year'] = site_df['Date'].dt.year
 
 # --- Tabs ---
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["📈 Time Series", "📆 Monthly Avg", "📅 Yearly Avg", "🔁 Compare Params", "📊 Correlation Matrix"])
+tab1, tab2, tab3 = st.tabs(["📈 Time Series", "📆 Monthly Avg", "📅 Yearly Avg"])
 
 with tab1:
     fig1 = px.line(site_df, x='Date', y=param, title=f'{param} Over Time at {selected_site}')
-fig1.update_layout(plot_bgcolor=card_bg, paper_bgcolor=bg_color, font=dict(color=text_color))
-st.plotly_chart(fig1, use_container_width=True)
+    st.plotly_chart(fig1, use_container_width=True)
 
 with tab2:
     monthly = site_df.groupby('Month')[param].mean().reset_index()
@@ -207,43 +196,6 @@ with tab3:
     yearly = site_df.groupby('Year')[param].mean().reset_index()
     fig3 = px.bar(yearly, x='Year', y=param, title=f'Yearly Average of {param}')
     st.plotly_chart(fig3, use_container_width=True)
-
-with tab4:
-    param2 = st.selectbox("🔁 Compare with another parameter", [col for col in numeric_cols if col != param])
-    scatter_df = site_df[[param, param2]].dropna()
-    fig4 = px.scatter(scatter_df, x=param2, y=param, title=f'{param} vs {param2} at {selected_site}')
-    st.plotly_chart(fig4, use_container_width=True)
-
-with tab5:
-    st.write(f"🔗 Correlation Matrix for all numeric parameters at site: {selected_site}")
-    corr_df = site_df[numeric_cols].corr()
-
-    colormaps = {
-        "Red–Blue": ["#730000", "#e57373", "#ffffff", "#64b5f6", "#003366"],
-        "Viridis": "Viridis",
-        "Cividis": "Cividis",
-        "Coolwarm": "RdBu",
-        "Greens": "Greens"
-    }
-    cmap_choice = st.selectbox("🎨 Choose a Color Map", list(colormaps.keys()), index=0)
-
-    fig_corr = px.imshow(
-        corr_df,
-        text_auto=True,
-        aspect="auto",
-        title="Correlation Matrix",
-        color_continuous_scale=colormaps[cmap_choice],
-        zmin=-1,
-        zmax=1
-    )
-    st.plotly_chart(fig_corr, use_container_width=True)
-
-    st.download_button(
-        label="💾 Download Correlation Matrix (Excel)",
-        data=corr_df.to_csv(index=True).encode("utf-8"),
-        file_name=f"{selected_site.replace(' ', '_')}_correlation_matrix.csv",
-        mime="text/csv"
-    )
 
 # ---------- Download Button ----------
 st.download_button(
