@@ -200,22 +200,23 @@ with tab4:
         st.plotly_chart(fig4, use_container_width=True)
 
 with tab5:
-    st.write(f"🔗 Correlation Matrix for all numeric parameters at site: {selected_site}")
+    st.write(f"Correlation Matrix for all numeric parameters at site: {selected_site}")
     
-    # انتخاب داده‌های عددی فقط برای ایستگاه انتخاب‌شده
-    corr_df = site_df[numeric_cols].dropna().corr()
+    corr_df = site_df[numeric_cols].corr()  # بدون dropna قبلی
+    
+    if corr_df.isnull().all().all():
+        st.warning("⚠️ No valid correlation values found.")
+    else:
+        fig_corr = px.imshow(
+            corr_df,
+            text_auto=True,
+            aspect="auto",
+            color_continuous_scale="RdBu",
+            title="Correlation Matrix",
+            zmin=-1, zmax=1
+        )
+        st.plotly_chart(fig_corr, use_container_width=True)
 
-    # رسم با plotly و رنگ‌بندی آبی تا قرمز
-    fig_corr = px.imshow(
-        corr_df,
-        text_auto=True,
-        aspect="auto",
-        color_continuous_scale="RdBu",
-        title="Correlation Matrix",
-        zmin=-1, zmax=1
-    )
-    
-    st.plotly_chart(fig_corr, use_container_width=True)
 
 # ---------- Download ----------
 st.download_button(
