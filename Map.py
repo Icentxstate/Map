@@ -184,17 +184,23 @@ with tab4:
         st.plotly_chart(fig4, use_container_width=True)
 
 with tab5:
-    corr_df = site_df[numeric_cols].dropna()
-    if corr_df.shape[0] < 2:
-        st.warning("Not enough data at this site to calculate correlation matrix.")
-    else:
-        corr = corr_df.corr()
-        cmap = sns.diverging_palette(240, 10, as_cmap=True)
-        fig_corr, ax = plt.subplots(figsize=(10, 8))
-        sns.heatmap(corr, annot=True, cmap=cmap, center=0, vmin=-1, vmax=1, linewidths=0.5,
-                    fmt=".2f", annot_kws={"size": 10}, square=True, ax=ax)
-        ax.set_title(f'Correlation Matrix at {selected_site}', fontsize=14)
-        st.pyplot(fig_corr)
+    st.write(f"🔗 Correlation Matrix for all numeric parameters at site: {selected_site}")
+    
+    # انتخاب داده‌های عددی فقط برای ایستگاه انتخاب‌شده
+    corr_df = site_df[numeric_cols].corr()
+
+    # رسم با plotly
+    fig_corr = px.imshow(
+        corr_df,
+        text_auto=True,
+        aspect="auto",
+        color_continuous_scale="RdBu",
+        title="Correlation Matrix",
+        zmin=-1, zmax=1  # دامنه استاندارد برای ضریب همبستگی
+    )
+    
+    st.plotly_chart(fig_corr, use_container_width=True)
+
 
 # ---------- Download ----------
 st.download_button(
