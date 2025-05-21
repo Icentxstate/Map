@@ -200,7 +200,7 @@ with tab3:
 with tab4:
     param2 = st.selectbox("🔁 Compare with another parameter", [col for col in numeric_cols if col != param])
     scatter_df = site_df[[param, param2]].dropna()
-    fig4 = px.scatter(scatter_df, x=param2, y=param, trendline="ols", title=f'{param} vs {param2} at {selected_site}')
+    fig4 = px.scatter(scatter_df, x=param2, y=param, title=f'{param} vs {param2} at {selected_site}')
     st.plotly_chart(fig4, use_container_width=True)
 
 # ---------- Download Button ----------
