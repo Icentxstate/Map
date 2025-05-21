@@ -180,7 +180,7 @@ site_df['Month'] = site_df['Date'].dt.to_period('M')
 site_df['Year'] = site_df['Date'].dt.year
 
 # --- Tabs ---
-tab1, tab2, tab3, tab4 = st.tabs(["📈 Time Series", "📆 Monthly Avg", "📅 Yearly Avg", "🔁 Compare Params"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["📈 Time Series", "📆 Monthly Avg", "📅 Yearly Avg", "🔁 Compare Params", "📊 Correlation Matrix"])
 
 with tab1:
     fig1 = px.line(site_df, x='Date', y=param, title=f'{param} Over Time at {selected_site}')
@@ -202,6 +202,12 @@ with tab4:
     scatter_df = site_df[[param, param2]].dropna()
     fig4 = px.scatter(scatter_df, x=param2, y=param, title=f'{param} vs {param2} at {selected_site}')
     st.plotly_chart(fig4, use_container_width=True)
+
+with tab5:
+    st.write(f"🔗 Correlation Matrix for all numeric parameters at site: {selected_site}")
+    corr_df = site_df[numeric_cols].corr()
+    fig_corr = px.imshow(corr_df, text_auto=True, aspect="auto", title="Correlation Matrix")
+    st.plotly_chart(fig_corr, use_container_width=True)
 
 # ---------- Download Button ----------
 st.download_button(
