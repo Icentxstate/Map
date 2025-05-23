@@ -122,8 +122,6 @@ if os.path.exists(watershed_path):
 
 
 
-
-
 marker_cluster = MarkerCluster().add_to(m)
 
 for _, row in avg_df.iterrows():
@@ -248,3 +246,4 @@ st.download_button(
     data=site_df.to_csv(index=False).encode('utf-8'),
     file_name=f"{selected_site.replace(' ', '_')}_data.csv",
     mime="text/csv"
+)
