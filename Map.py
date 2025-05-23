@@ -6,7 +6,7 @@ from folium.plugins import MarkerCluster
 from branca.colormap import linear
 from streamlit_folium import st_folium
 import plotly.express as px
-
+import geopandas as gpd
 # ---------- Page Config ----------
 st.set_page_config(page_title="Water Quality Dashboard", layout="wide")
 
