@@ -5,3 +5,9 @@ streamlit-folium
 matplotlib
 plotly
 seaborn
+pandas
+folium
+geopandas
+streamlit
+streamlit-folium
+plotly
