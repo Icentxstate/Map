@@ -126,21 +126,40 @@ for _, row in avg_df.iterrows():
     CircleMarker(location=[lat, lon], radius=8, color=color, fill=True, fill_opacity=0.9,
                  popup=folium.Popup(popup_content, max_width=300)).add_to(marker_cluster)
 
-# خواندن شیپ‌فایل Watershed
-watershed_gdf = gpd.read_file("path_to_your/Watershed.shp")
+# ---------- بارگذاری فایل ZIP ----------
+shp_zip = st.sidebar.file_uploader("📁 Upload Watershed Shapefile (.zip)", type=["zip"])
 
-# افزودن به نقشه به‌صورت GeoJSON
-folium.GeoJson(
-    data=watershed_gdf,
-    name="Watershed Boundary",
-    style_function=lambda feature: {
-        'fillColor': 'green',
-        'color': 'green',
-        'weight': 1,
-        'fillOpacity': 0.1,
-    },
-    tooltip=folium.GeoJsonTooltip(fields=['HU_12_NAME', 'HUC_12'], aliases=['Watershed', 'HUC 12'])
-).add_to(m)
+if shp_zip is not None:
+    with zipfile.ZipFile(shp_zip, "r") as zf:
+        extract_path = "/tmp/shapefile"
+        zf.extractall(extract_path)
+
+    # پیدا کردن فایل .shp
+    shp_files = [f for f in os.listdir(extract_path) if f.endswith(".shp")]
+    if not shp_files:
+        st.error("⚠️ No .shp file found inside the ZIP.")
+    else:
+        shp_path = os.path.join(extract_path, shp_files[0])
+        try:
+            gdf = gpd.read_file(shp_path)
+            geojson_data = gdf.to_json()
+            folium.GeoJson(
+                geojson_data,
+                name="Watershed Shapefile",
+                style_function=lambda feature: {
+                    "fillColor": "#b2dfdb",
+                    "color": "#00695c",
+                    "weight": 2,
+                    "fillOpacity": 0.2,
+                },
+                tooltip=folium.GeoJsonTooltip(
+                    fields=[col for col in gdf.columns if gdf[col].dtype == object][:3],
+                    aliases=["Attr1", "Attr2", "Attr3"],
+                    labels=True
+                )
+            ).add_to(m)
+        except Exception as e:
+            st.error(f"❌ Failed to read shapefile: {e}")
 
 # ---------- Add Watershed Shapefile Layer ----------
 if shp_zip is not None:
