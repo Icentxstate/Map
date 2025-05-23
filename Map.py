@@ -1,4 +1,3 @@
-# Water Quality Dashboard - Final Version (Click-to-Select Site)
 import streamlit as st
 import pandas as pd
 import folium
@@ -100,6 +99,28 @@ bounds = [[df['Latitude'].min(), df['Longitude'].min()],
           [df['Latitude'].max(), df['Longitude'].max()]]
 m.fit_bounds(bounds)
 
+# Add Vector Tile Layer from ESRI
+tile_url = "https://tiles.arcgis.com/tiles/1b243539f4514b6ba35e7d995890db1d/arcgis/rest/services/USA_Topo_Maps/MapServer/tile/{z}/{y}/{x}"
+folium.TileLayer(
+    tiles=tile_url,
+    attr="ESRI Topo",
+    name="ESRI Vector Tile",
+    overlay=True,
+    control=True
+).add_to(m)
+
+# Add Watershed Shapefile Layer
+try:
+    gdf = gpd.read_file("Watershed.shp")
+    folium.GeoJson(
+        gdf,
+        name="Watershed Boundary",
+        tooltip=folium.GeoJsonTooltip(fields=gdf.columns.tolist(), aliases=gdf.columns.tolist())
+    ).add_to(m)
+except Exception as e:
+    st.error(f"Error loading shapefile: {e}")
+
+# Marker Cluster for Sites
 marker_cluster = MarkerCluster().add_to(m)
 
 for _, row in avg_df.iterrows():
@@ -128,7 +149,10 @@ for _, row in avg_df.iterrows():
                  popup=folium.Popup(popup_content, max_width=300)).add_to(marker_cluster)
 
 m.add_child(colormap)
+folium.LayerControl().add_to(m)  # Enable layer toggle
+
 clicked = st_folium(m, use_container_width=True)
+
 
 # ---------- Determine Clicked Site ----------
 if clicked and clicked.get("last_object_clicked"):
