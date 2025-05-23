@@ -98,6 +98,12 @@ m = folium.Map(zoom_start=8, control_scale=True)
 bounds = [[df['Latitude'].min(), df['Longitude'].min()],
           [df['Latitude'].max(), df['Longitude'].max()]]
 m.fit_bounds(bounds)
+
+with open("/mnt/data/Watershed.geojson", "r", encoding="utf-8") as f:
+    geojson_data = json.load(f)
+
+st.json(geojson_data)
+
 # ---------- Add Watershed GeoJSON Layer ----------
 import json
 import os
