@@ -7,6 +7,7 @@ from branca.colormap import linear
 from streamlit_folium import st_folium
 import plotly.express as px
 import geopandas as gpd
+import json
 # ---------- Page Config ----------
 st.set_page_config(page_title="Water Quality Dashboard", layout="wide")
 
@@ -79,6 +80,8 @@ all_sites = df['Site Name'].unique().tolist()
 clicked = None
 clicked_site = None
 
+import json
+
 # ---------- Map ----------
 st.subheader("Average Value Map by Site")
 grouped = df.groupby('Site Name')
@@ -99,7 +102,7 @@ bounds = [[df['Latitude'].min(), df['Longitude'].min()],
           [df['Latitude'].max(), df['Longitude'].max()]]
 m.fit_bounds(bounds)
 
-# Add Vector Tile Layer from ESRI
+# --- Add ESRI Vector Tile Layer ---
 tile_url = "https://tiles.arcgis.com/tiles/1b243539f4514b6ba35e7d995890db1d/arcgis/rest/services/USA_Topo_Maps/MapServer/tile/{z}/{y}/{x}"
 folium.TileLayer(
     tiles=tile_url,
@@ -109,18 +112,18 @@ folium.TileLayer(
     control=True
 ).add_to(m)
 
-# Add Watershed Shapefile Layer
+# --- Add Watershed GeoJSON Layer ---
 try:
-    gdf = gpd.read_file("Watershed.shp")
+    with open("Watershed.geojson", "r", encoding="utf-8") as f:
+        geojson_data = json.load(f)
     folium.GeoJson(
-        gdf,
-        name="Watershed Boundary",
-        tooltip=folium.GeoJsonTooltip(fields=gdf.columns.tolist(), aliases=gdf.columns.tolist())
+        geojson_data,
+        name="Watershed Boundary"
     ).add_to(m)
 except Exception as e:
-    st.error(f"Error loading shapefile: {e}")
+    st.error(f"Error loading Watershed.geojson: {e}")
 
-# Marker Cluster for Sites
+# --- Add site circles and markers ---
 marker_cluster = MarkerCluster().add_to(m)
 
 for _, row in avg_df.iterrows():
@@ -152,6 +155,7 @@ m.add_child(colormap)
 folium.LayerControl().add_to(m)  # Enable layer toggle
 
 clicked = st_folium(m, use_container_width=True)
+
 
 
 # ---------- Determine Clicked Site ----------
