@@ -126,6 +126,22 @@ for _, row in avg_df.iterrows():
     CircleMarker(location=[lat, lon], radius=8, color=color, fill=True, fill_opacity=0.9,
                  popup=folium.Popup(popup_content, max_width=300)).add_to(marker_cluster)
 
+# خواندن شیپ‌فایل Watershed
+watershed_gdf = gpd.read_file("path_to_your/Watershed.shp")
+
+# افزودن به نقشه به‌صورت GeoJSON
+folium.GeoJson(
+    data=watershed_gdf,
+    name="Watershed Boundary",
+    style_function=lambda feature: {
+        'fillColor': 'green',
+        'color': 'green',
+        'weight': 1,
+        'fillOpacity': 0.1,
+    },
+    tooltip=folium.GeoJsonTooltip(fields=['HU_12_NAME', 'HUC_12'], aliases=['Watershed', 'HUC 12'])
+).add_to(m)
+
 # ---------- Add Watershed Shapefile Layer ----------
 if shp_zip is not None:
     with zipfile.ZipFile(shp_zip, "r") as zf:
