@@ -6,8 +6,7 @@ from folium.plugins import MarkerCluster
 from branca.colormap import linear
 from streamlit_folium import st_folium
 import plotly.express as px
-import geopandas as gpd
-import json
+
 # ---------- Page Config ----------
 st.set_page_config(page_title="Water Quality Dashboard", layout="wide")
 
@@ -80,8 +79,6 @@ all_sites = df['Site Name'].unique().tolist()
 clicked = None
 clicked_site = None
 
-import json
-
 # ---------- Map ----------
 st.subheader("Average Value Map by Site")
 grouped = df.groupby('Site Name')
@@ -101,29 +98,32 @@ m = folium.Map(zoom_start=8, control_scale=True)
 bounds = [[df['Latitude'].min(), df['Longitude'].min()],
           [df['Latitude'].max(), df['Longitude'].max()]]
 m.fit_bounds(bounds)
+# ---------- Add Watershed GeoJSON Layer ----------
+import json
+import os
 
-# --- Add ESRI Vector Tile Layer ---
-tile_url = "https://tiles.arcgis.com/tiles/1b243539f4514b6ba35e7d995890db1d/arcgis/rest/services/USA_Topo_Maps/MapServer/tile/{z}/{y}/{x}"
-folium.TileLayer(
-    tiles=tile_url,
-    attr="ESRI Topo",
-    name="ESRI Vector Tile",
-    overlay=True,
-    control=True
-).add_to(m)
-
-# --- Add Watershed GeoJSON Layer ---
-try:
-    with open("Watershed.geojson", "r", encoding="utf-8") as f:
+watershed_path = "Watershed.geojson"
+if os.path.exists(watershed_path):
+    with open(watershed_path, "r", encoding="utf-8") as f:
         geojson_data = json.load(f)
     folium.GeoJson(
         geojson_data,
-        name="Watershed Boundary"
+        name="Watershed Boundary",
+        style_function=lambda feature: {
+            "fillColor": "#228B22",
+            "color": "#006400",
+            "weight": 2,
+            "fillOpacity": 0.1,
+        },
+        tooltip=folium.GeoJsonTooltip(fields=[],
+                                       aliases=[],
+                                       labels=False)
     ).add_to(m)
-except Exception as e:
-    st.error(f"Error loading Watershed.geojson: {e}")
 
-# --- Add site circles and markers ---
+
+
+
+
 marker_cluster = MarkerCluster().add_to(m)
 
 for _, row in avg_df.iterrows():
@@ -152,11 +152,7 @@ for _, row in avg_df.iterrows():
                  popup=folium.Popup(popup_content, max_width=300)).add_to(marker_cluster)
 
 m.add_child(colormap)
-folium.LayerControl().add_to(m)  # Enable layer toggle
-
 clicked = st_folium(m, use_container_width=True)
-
-
 
 # ---------- Determine Clicked Site ----------
 if clicked and clicked.get("last_object_clicked"):
@@ -252,4 +248,3 @@ st.download_button(
     data=site_df.to_csv(index=False).encode('utf-8'),
     file_name=f"{selected_site.replace(' ', '_')}_data.csv",
     mime="text/csv"
-)
